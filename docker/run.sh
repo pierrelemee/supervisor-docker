@@ -15,7 +15,7 @@ fi
 if [ -f "${SUPERVISOR_CONFIG}" ]; then
   cat "${SUPERVISOR_CONFIG}" >> "${SUPERVISOR_CONFIG_FILE}"
 else
-  echo "${SUPERVISOR_CONFIG}" >> "${SUPERVISOR_CONFIG_FILE}"
+  echo -e "${SUPERVISOR_CONFIG}" >> "${SUPERVISOR_CONFIG_FILE}"
 fi
 
 # Start supervisor process in the background
