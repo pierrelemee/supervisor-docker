@@ -3,8 +3,8 @@
 # Prepare supervisor with user configuration
 SUPERVISOR_CONFIG_FILE=/etc/supervisor/conf.d/supervisord.conf
 
-sed -i s/{{ADMIN_USERNAME}}/${ADMIN_USERNAME}/g /etc/supervisor/conf.d/supervisord.conf
-sed -i s/{{ADMIN_PASSWORD}}/${ADMIN_PASSWORD}/g /etc/supervisor/conf.d/supervisord.conf
+sed -i s/{{API_USERNAME}}/${SUPERVISOR_API_USERNAME}/g /etc/supervisor/conf.d/supervisord.conf
+sed -i s/{{API_PASSWORD}}/${SUPERVISOR_API_PASSWORD}/g /etc/supervisor/conf.d/supervisord.conf
 
 if [ -z "${SUPERVISOR_CONFIG}" ]; then
   echo "Missing environment variable SUPERVISOR_CONFIG" && exit 1

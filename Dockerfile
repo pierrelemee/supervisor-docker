@@ -12,8 +12,8 @@ nodaemon=true
 
 [inet_http_server]
 port = 127.0.0.1:9001
-username = {{ADMIN_USERNAME}}
-password = {{ADMIN_PASSWORD}}
+username = {{API_USERNAME}}
+password = {{API_PASSWORD}}
 
 [rpcinterface:supervisor]
 supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
@@ -37,7 +37,7 @@ RUN chmod 744 /usr/bin/supervisor-api
 
 WORKDIR /root
 
-EXPOSE ${API_PORT:-8000}
+EXPOSE ${SUPERVISOR_API_PORT:-8000}
 
 # Lancer supervisor a démarrage
 CMD ["/usr/bin/bootstrap"]

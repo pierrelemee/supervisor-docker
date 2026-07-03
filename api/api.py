@@ -41,8 +41,8 @@ KNOWN_PROGRAMS = parse_programs(_supervisor_config)
 app = FastAPI()
 
 # Supervisor API config
-_supervisor_user = os.environ.get('ADMIN_USERNAME', '')
-_supervisor_pass = os.environ.get('ADMIN_PASSWORD', '')
+_supervisor_user = os.environ.get('SUPERVISOR_API_USERNAME', '')
+_supervisor_pass = os.environ.get('SUPERVISOR_API_PASSWORD', '')
 SUPERVISOR_URL = f"http://{_supervisor_user}:{_supervisor_pass}@localhost:9001/RPC2"
 SUPERVISOR = xmlrpc.client.ServerProxy(SUPERVISOR_URL)
 
@@ -93,8 +93,7 @@ def health_check_job(job_name: str):
                 detail={
                     "status": "error",
                     "job": job_name,
-                    "state": job_status["statename"],
-                    "expected": "RUNNING",
+                    "state": job_status["statename"]
                 },
             )
     except Exception as e:
@@ -137,7 +136,7 @@ def tail_log(
             status_code=404,
             detail=f"Log stream '{stream}' not found for job '{job_name}'."
         )
-    return tail_file(logs[stream_key], lines)
+    return tail_file(logs[stream_key[stream]], lines)
 
 
 def tail_file(file_path: str, lines: int = 100):
@@ -151,24 +150,28 @@ def tail_file(file_path: str, lines: int = 100):
         raise HTTPException(status_code=500, detail=f"Failed to read log file: {str(e)}")
 
 
-@app.get("/logs/{job_name}/stream")
-async def stream_log(job_name: str, stream: str = "stdout"):
+@app.get("/logs/{job_name}/follow/{stream}")
+async def follow_log(job_name: str, stream: str = "out"):
     """
     Stream a job's log file in real-time using Server-Sent Events (SSE).
     Usage: `curl http://localhost:5000/logs/worker/stream?stream=stdout`
     """
+    stream_key = {"out": "stdout", "err": "stderr"}.get(stream)
+    if not stream_key:
+        raise HTTPException(status_code=400, detail=f"Invalid stream '{stream}': must be 'out' or 'err'.")
+
     log_paths = get_job_log_paths()
     if job_name not in log_paths:
         raise HTTPException(status_code=404, detail=f"Job '{job_name}' not found.")
 
     logs = log_paths[job_name]
-    if stream not in logs or not logs[stream]:
+    if stream not in stream_key or stream_key[stream] not in logs or not logs[stream_key[stream]]:
         raise HTTPException(
             status_code=404,
             detail=f"Log stream '{stream}' not found for job '{job_name}'."
         )
 
-    log_file = logs[stream]
+    log_file = logs[stream_key[stream]]
 
     async def generate():
         with open(log_file, "r") as f:
@@ -185,4 +188,4 @@ async def stream_log(job_name: str, stream: str = "stdout"):
 
 if __name__ == '__main__':
     import uvicorn
-    uvicorn.run(app, host='0.0.0.0', port=int(os.environ.get('API_PORT', 80)))
+    uvicorn.run(app, host='0.0.0.0', port=int(os.environ.get('SUPERVISOR_API_PORT', 8000)))
