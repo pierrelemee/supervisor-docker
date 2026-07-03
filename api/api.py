@@ -2,8 +2,9 @@ import asyncio
 import argparse
 import configparser
 import sys
+import time
 
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
 import xmlrpc.client
 import os
@@ -136,7 +137,7 @@ def tail_log(
             status_code=404,
             detail=f"Log stream '{stream}' not found for job '{job_name}'."
         )
-    return tail_file(logs[stream_key[stream]], lines)
+    return Response(content=tail_file(logs[stream_key], lines), media_type="text/plain")
 
 
 def tail_file(file_path: str, lines: int = 100):
@@ -151,27 +152,34 @@ def tail_file(file_path: str, lines: int = 100):
 
 
 @app.get("/logs/{job_name}/follow/{stream}")
-async def follow_log(job_name: str, stream: str = "out"):
+async def follow_log(
+    job_name: str,
+    stream: str = "out",
+    timed: str = Query(default="false"),
+):
     """
     Stream a job's log file in real-time using Server-Sent Events (SSE).
-    Usage: `curl http://localhost:5000/logs/worker/stream?stream=stdout`
+    `timed=true` prepends each line with the current timestamp in milliseconds.
+    Accepted values for timed: 1, true, t, yes / 0, false, f, no.
     """
     stream_key = {"out": "stdout", "err": "stderr"}.get(stream)
     if not stream_key:
         raise HTTPException(status_code=400, detail=f"Invalid stream '{stream}': must be 'out' or 'err'.")
+
+    prepend_timestamp = timed.lower() in ("1", "true", "t", "yes")
 
     log_paths = get_job_log_paths()
     if job_name not in log_paths:
         raise HTTPException(status_code=404, detail=f"Job '{job_name}' not found.")
 
     logs = log_paths[job_name]
-    if stream not in stream_key or stream_key[stream] not in logs or not logs[stream_key[stream]]:
+    if stream_key is None or stream_key not in logs or not logs[stream_key]:
         raise HTTPException(
             status_code=404,
             detail=f"Log stream '{stream}' not found for job '{job_name}'."
         )
 
-    log_file = logs[stream_key[stream]]
+    log_file = logs[stream_key]
 
     async def generate():
         with open(log_file, "r") as f:
@@ -179,7 +187,10 @@ async def follow_log(job_name: str, stream: str = "out"):
             while True:
                 line = f.readline()
                 if line:
-                    yield f"data: {line}\n\n"
+                    if prepend_timestamp:
+                        ts = int(time.time() * 1000)
+                        line = f"[{ts}] {line}"
+                    yield line
                 else:
                     await asyncio.sleep(0.1)
 

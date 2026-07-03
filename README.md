@@ -76,6 +76,8 @@ You can also access the live stream with the `GET /logs/{job}/follow/{stream}` e
 curl -u ${SUPERVISOR_API_USERNAME}:${SUPERVISOR_API_PASSWORD} http://localhost:8000/logs/myjob/follow/out
 ```
 
+This endpoint allows to prefix each log line by its timestamp in milliseconds by setting the `timed` query parameter with a truey value (`true`, `t`, `yes` or `1`) or a falsy one (default to `false`).
+
 ## Build and push the Docker image
 
 ```bash
