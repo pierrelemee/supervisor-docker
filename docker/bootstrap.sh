@@ -1,23 +1,6 @@
 #!/bin/bash
 
-
-## Start process 1 in the background
-#/path/to/process1 &
-#P1_PID=$!
-#
-## Start process 2 in the background
-#/path/to/process2 &
-#P2_PID=$!
-#
-## Wait for any process to exit
-#wait -n
-#EXIT_CODE=$?
-#
-## Kill the other process
-#kill $P1_PID $P2_PID 2>/dev/null
-#
-## Exit with the status of the failed process
-#exit $EXIT_CODE
+# Prepare supervisor with user configuration
 SUPERVISOR_CONFIG_FILE=/etc/supervisor/conf.d/supervisord.conf
 
 sed -i s/{{ADMIN_USERNAME}}/${ADMIN_USERNAME}/g /etc/supervisor/conf.d/supervisord.conf
@@ -35,6 +18,20 @@ fi
 
 cat "${SUPERVISOR_CONFIG_FILE}"
 
-# Launching supervisor
-/usr/bin/supervisord -c "${SUPERVISOR_CONFIG_FILE}"
+# Start supervisor process in the background
+/usr/bin/supervisord -c "${SUPERVISOR_CONFIG_FILE}" &
+SUPERVISOR_PID=$!
 
+# Start process 2 in the background
+/usr/bin/supervisor-api &
+API_PID=$!
+
+# Wait for any of these processes to exit
+wait -n
+EXIT_CODE=$?
+
+# Kill the other process
+kill $SUPERVISOR_PID $API_PID 2>/dev/null
+
+# Exit with the status of the failed process
+exit $EXIT_CODE

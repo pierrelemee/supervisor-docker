@@ -6,10 +6,21 @@ services:
     environment:
       ADMIN_USERNAME: ${ADMIN_USERNAME:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      API_PORT: ${API_PORT:-8000}
       SUPERVISOR_CONFIG: |
         [program:myjob1]
-        command=bash -c 'for i in $(seq 1 50); do shuf -i 2000-65000 -n 1; sleep 1; done'
+        command=bash -c 'for i in $(seq 1 150); do shuf -i 2000-65000 -n 1; sleep 1; done'
         autostart=true
         autorestart=true
         stdout_logfile=/var/log/myjob1.out.log
         stderr_logfile=/var/log/myjob1.err.log
+        
+        [program:myjob2]
+        command=bash -c 'echo "Failure" && exit 5'
+        autostart=true
+        autorestart=false
+        startretries=0
+        stdout_logfile=/var/log/myjob2.out.log
+        stderr_logfile=/var/log/myjob2.err.log
+    ports:
+      - 8000:${API_PORT:-8000}
