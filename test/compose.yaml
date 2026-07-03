@@ -1,0 +1,15 @@
+services:
+  supervisor:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    environment:
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      SUPERVISOR_CONFIG: |
+        [program:myjob1]
+        command=bash -c 'for i in $(seq 1 50); do shuf -i 2000-65000 -n 1; sleep 1; done'
+        autostart=true
+        autorestart=true
+        stdout_logfile=/var/log/myjob1.out.log
+        stderr_logfile=/var/log/myjob1.err.log
