@@ -4,8 +4,11 @@ import configparser
 import sys
 import time
 
-from fastapi import FastAPI, HTTPException, Query, Response
+import secrets
+
+from fastapi import Depends, FastAPI, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import xmlrpc.client
 import os
 from pathlib import Path
@@ -39,12 +42,26 @@ _args, _ = _parser.parse_known_args()
 _supervisor_config = load_supervisor_config(_args.config)
 KNOWN_PROGRAMS = parse_programs(_supervisor_config)
 
-app = FastAPI()
+_api_username = os.environ.get('SUPERVISOR_API_USERNAME', '')
+_api_password = os.environ.get('SUPERVISOR_API_PASSWORD', '')
 
-# Supervisor API config
-_supervisor_user = os.environ.get('SUPERVISOR_API_USERNAME', '')
-_supervisor_pass = os.environ.get('SUPERVISOR_API_PASSWORD', '')
-SUPERVISOR_URL = f"http://{_supervisor_user}:{_supervisor_pass}@localhost:9001/RPC2"
+_security = HTTPBasic()
+
+def require_auth(credentials: HTTPBasicCredentials = Depends(_security)):
+
+    print("user: ", _api_username, "pass: ", _api_password)
+
+    ok = (
+        secrets.compare_digest(credentials.username.encode(), _api_username.encode())
+        and secrets.compare_digest(credentials.password.encode(), _api_password.encode())
+    )
+    if not ok:
+        raise HTTPException(status_code=401, detail="Unauthorized", headers={"WWW-Authenticate": "Basic"})
+
+
+app = FastAPI(dependencies=[Depends(require_auth)])
+
+SUPERVISOR_URL = f"http://{_api_username}:{_api_password}@localhost:9001/RPC2"
 SUPERVISOR = xmlrpc.client.ServerProxy(SUPERVISOR_URL)
 
 

@@ -78,8 +78,25 @@ curl -u ${SUPERVISOR_API_USERNAME}:${SUPERVISOR_API_PASSWORD} http://localhost:8
 
 This endpoint allows to prefix each log line by its timestamp in milliseconds by setting the `timed` query parameter with a truey value (`true`, `t`, `yes` or `1`) or a falsy one (default to `false`).
 
-## Build and push the Docker image
+## The Docker image
+
+The image is built using [buildx](https://docs.docker.com/buildx/working-with-buildx/) and is available on [Docker Hub](https://hub.docker.com/r/pierrelemee/supervisor-docker) :
 
 ```bash
-docker buildx build --platform linux/amd64,linux/arm64 . -t pierrelemee/supervisor-docker
+docker buildx build --platform linux/amd64,linux/arm64 . -t pierrelemee/supervisor-docker:<tag>
+```
+
+You can extend the image with [Docker _multi-stage_ build](https://docs.docker.com/build/building/multi-stage/) by doing so :
+
+```Dockerfile
+FROM pierrelemee/supervisor-docker:latest AS supervisor
+
+FROM base-image:version AS base
+
+COPY --from=supervisor /opt/supervisor-api /opt/supervisor-api
+
+# ... declare your steps here
+
+# This step is required to override any `CMD` directive from `base-image 
+CMD ["/opt/supervisor-api/supervisor-api"]
 ```

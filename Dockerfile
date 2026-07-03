@@ -3,8 +3,8 @@ FROM debian:trixie-slim
 RUN apt update -y && apt upgrade -y --fix-missing && apt install -y virtualenv
 
 COPY ./api /opt/supervisor-api
-COPY docker/bootstrap.sh /opt/supervisor-api/bootstrap
-RUN chmod 777 /opt/supervisor-api/bootstrap
+COPY docker/run.sh /opt/supervisor-api/supervisor-api
+RUN chmod 777 /opt/supervisor-api/supervisor-api
 
 # Initialize supervisor configuration
 RUN cat <<EOF > /opt/supervisor-api/supervisord.conf
@@ -22,8 +22,8 @@ password = {{API_PASSWORD}}
 [rpcinterface:supervisor]
 supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
 EOF
-# Setup API
 
+# Setup API
 WORKDIR /opt/supervisor-api
 
 RUN virtualenv venv && . venv/bin/activate && pip install -r requirements.txt && deactivate
@@ -32,5 +32,5 @@ WORKDIR /root
 
 EXPOSE ${SUPERVISOR_API_PORT:-8000}
 
-# Lancer supervisor a démarrage
-CMD ["/opt/supervisor-api/bootstrap"]
+# Launch the run script
+CMD ["/opt/supervisor-api/supervisor-api"]
