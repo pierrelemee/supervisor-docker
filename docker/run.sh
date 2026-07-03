@@ -13,7 +13,7 @@ if [ -z "${SUPERVISOR_CONFIG}" ]; then
 fi
 
 if [ -f "${SUPERVISOR_CONFIG}" ]; then
-  cat "${SUPERVISOR_CONFIG}" >> SUPERVISOR_CONFIG_FILE
+  cat "${SUPERVISOR_CONFIG}" >> "${SUPERVISOR_CONFIG_FILE}"
 else
   echo "${SUPERVISOR_CONFIG}" >> "${SUPERVISOR_CONFIG_FILE}"
 fi
